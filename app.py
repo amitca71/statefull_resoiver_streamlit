@@ -5,11 +5,24 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import pytz
-
+def get_user_email():
+    # Check if we are running in a context where headers are available (Streamlit Cloud)
+    # The header 'X-Streamlit-User-Email' is injected by Streamlit Cloud when the user is logged in.
+    if hasattr(st, "context") and st.context.headers:
+        return st.context.headers.get("X-Streamlit-User-Email", "local_dev_user")
+    
+    # Fallback for older Streamlit versions (just in case)
+    try:
+        if hasattr(st, "experimental_user"):
+            return st.experimental_user.email
+    except:
+        pass
+        
+    return "local_dev_user"
 # --- 1. GET CURRENT USER (Option 3 Magic) ---
 # Streamlit Cloud automatically provides this if the user logged in via the "Share" invite.
 # If running locally, it might be None, so we set a fallback.
-current_user_email = st.experimental_user.email if st.experimental_user.email else "local_dev"
+current_user_email = get_user_email()
 
 # --- 2. GOOGLE SHEETS CONNECTION ---
 @st.cache_resource
