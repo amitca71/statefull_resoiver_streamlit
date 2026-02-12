@@ -6,19 +6,26 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import pytz
 def get_user_email():
-    # Check if we are running in a context where headers are available (Streamlit Cloud)
-    # The header 'X-Streamlit-User-Email' is injected by Streamlit Cloud when the user is logged in.
-    if hasattr(st, "context") and st.context.headers:
-        return st.context.headers.get("X-Streamlit-User-Email", "local_dev_user")
-    
-    # Fallback for older Streamlit versions (just in case)
+    # 1. Try to get email from the Headers (Works on Streamlit Cloud)
+    try:
+        from streamlit.web.server.websocket_headers import _get_websocket_headers
+        headers = _get_websocket_headers()
+        if headers and "X-Streamlit-User-Email" in headers:
+            return headers["X-Streamlit-User-Email"]
+    except:
+        pass
+
+    # 2. Fallback for older Streamlit versions
     try:
         if hasattr(st, "experimental_user"):
             return st.experimental_user.email
     except:
         pass
-        
+    
+    # 3. If running locally or app is Public
     return "local_dev_user"
+
+current_user_email = get_user_email()
 # --- 1. GET CURRENT USER (Option 3 Magic) ---
 # Streamlit Cloud automatically provides this if the user logged in via the "Share" invite.
 # If running locally, it might be None, so we set a fallback.
