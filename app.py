@@ -5,26 +5,41 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import pytz
+# --- UNIVERSAL USER EMAIL FUNCTION ---
 def get_user_email():
-    # 1. Try to get email from the Headers (Works on Streamlit Cloud)
+    # 1. Try the new official 'st.context' (Streamlit 1.40+)
+    try:
+        # st.context.headers is a dictionary-like object
+        if st.context.headers and "X-Streamlit-User-Email" in st.context.headers:
+            return st.context.headers["X-Streamlit-User-Email"]
+    except Exception:
+        pass
+
+    # 2. Try the internal WebSocket headers (The "Hack" method)
+    # This works on many cloud versions where st.context might be empty
     try:
         from streamlit.web.server.websocket_headers import _get_websocket_headers
         headers = _get_websocket_headers()
         if headers and "X-Streamlit-User-Email" in headers:
             return headers["X-Streamlit-User-Email"]
-    except:
+    except Exception:
         pass
 
-    # 2. Fallback for older Streamlit versions
+    # 3. Last Resort: Old experimental_user (Pre-1.40)
     try:
         if hasattr(st, "experimental_user"):
             return st.experimental_user.email
-    except:
+    except Exception:
         pass
     
-    # 3. If running locally or app is Public
-    return "local_dev_user"
+    # 4. If all else fails, return a debug string
+    return "User_Not_Found_In_Headers"
 
+# Get the email
+current_user_email = get_user_email()
+
+# --- DEBUG DISPLAY (Remove this after it works) ---
+st.write(f"Logged in as: **{current_user_email}**")
 current_user_email = get_user_email()
 # --- 1. GET CURRENT USER (Option 3 Magic) ---
 # Streamlit Cloud automatically provides this if the user logged in via the "Share" invite.
